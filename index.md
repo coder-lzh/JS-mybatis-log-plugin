@@ -2,84 +2,158 @@
 <html lang="ch-zn">
 <head>
     <meta charset="utf-8">
-    <title></title>
-    <script type="text/javascript">
-
-        function multiTransefer(inputText) {
-            document.getElementById('logAfterId').value = '';
-            // 将传入的字符串根据MyBatis的标识拆分成数组
-            var mybatisSQLTexts = [];
-
-            while (inputText.lastIndexOf('Preparing: ') > -1) {
-                // 因为是从尾部截取，所以需要从数组的头部添加
-                mybatisSQLTexts.unshift(inputText.substring(inputText.lastIndexOf('Preparing: ')));
-
-                inputText = inputText.substring(0, inputText.lastIndexOf('Preparing: '));
-            }
-            console.log(mybatisSQLTexts);
-
-            // 将数组中的字符串挨个处理，以数组形式返回
-            for (var i = 0; i < mybatisSQLTexts.length; i++) {
-                parseSql(mybatisSQLTexts[i]);
-            }
+    <title>Mybatis SQL 格式化工具</title>
+    <meta name=viewport content="width=device-width,initial-scale=1">
+    <meta content='coder-lzh/JS-mybatis-log-plugin' itemprop='name' property='og:title'>
+    <meta name="description" content='用简单的JavaScript代替IDEA中的MyBatis Log Plugin插件&#x000A;&#x000A;可以将来MyBatis日志中的SQL提取出来并将问号参数替代成实际值' property='og:description'>
+    <meta  content="本人JAVA程序猿，由于之前的IDEA的日志格式化工具mybatis log plugin收费，便写了个工具来提高工作效率,如果对您有帮助，可以请我喝个奶茶。更多黑科技请关注微信公众号：干货食堂。">
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.0.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .btn-parent{
+            /*border: 1px solid red;*/
+            /*height: 100px;*/
+            /*width: 100px;*/
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 7px;
+        }
+        .btn-child {
+            /*border: 1px solid gray;*/
+            /*height: 50px;*/
+            /*width: 50px;*/
+        }
+        .leftMain{
+            margin: 4px 20px;
         }
 
-        // 单句的问号生成SQL
-        function parseSql(textVa) {
-            // 获取带问号的SQL语句
-            var statementStartIndex = textVa.indexOf('Preparing: ');
-            var statementEndIndex = textVa.length - 1;
-            for (var i = statementStartIndex; i < textVa.length; i++) {
-                if (textVa[i] === "\n") {
-                    statementEndIndex = i;
-                    break;
-                }
-            }
-            var statementStr = textVa.substring(statementStartIndex + "Preparing: ".length, statementEndIndex);
-            // console.log(statementStr);
-            //获取参数
-            var parametersStartIndex = textVa.indexOf('Parameters: ');
-            var parametersEndIndex = textVa.length - 1;
-            for (var i = parametersStartIndex; i < textVa.length; i++) {
-                if (textVa[i] === "\n") {
-                    parametersEndIndex = i;
-                    break;
-                } else {
-                    // console.log(textVa[i]);
-                }
-            }
-            var parametersStr = textVa.substring(parametersStartIndex + "Parameters: ".length, parametersEndIndex+1);
-            parametersStr = parametersStr.split(",");
-            // console.log(parametersStr);
-            for (var i = 0; i < parametersStr.length; i++) {
-                // 如果数据中带括号将使用其他逻辑
-                tempStr = parametersStr[i].substring(0, parametersStr[i].lastIndexOf("("));
-                // 获取括号中内容
-                typeStr = parametersStr[i].substring(parametersStr[i].lastIndexOf("(") + 1, parametersStr[i].lastIndexOf(")"));
-                // 如果为字符类型
-                if (typeStr === "String" || typeStr === "Timestamp" || typeStr === "Date") {
-                    statementStr = statementStr.replace("?", "'" + tempStr.trim() + "'");
-                } else {
-                    // 数值类型
-                    statementStr = statementStr.replace("?", tempStr.trim());
-                }
-            }
-            // console.log(statementStr);
-            document.getElementById("logAfterId").value += '\n\n\n';
-            document.getElementById("logAfterId").value += statementStr;
-            return textVa;
+        .end{
+            /*background-color: #ff0000;*/
+            position: fixed;
+            width: 100%;
+            bottom: 0px;
         }
-
-        function clearContent() {
-            document.getElementById('logBeforeId').value = '';
-            document.getElementById('logAfterId').value = '';
+        .tips{
+            font-family: fantasy;
+            padding: 5px 10px;
         }
-    </script>
+    </style>
 </head>
 <body>
-<textarea style="width:40%;"  name="logBefore" id="logBeforeId" rows="40" placeholder="转换前的log"></textarea>
-<button style="width:60px" type="submit" onclick="multiTransefer(document.getElementById('logBeforeId').value)">转换</button>
-<button style="width:60px" type="input" onclick="clearContent()">清除</button>
-<textarea style="width:40%;" name="logAfter" id="logAfterId" rows="40" placeholder="转换后的SQL"></textarea>
+
+<div class="leftMain">
+    <div class="tips">
+        背景：由于MyBatis Log Plugin插件目前变收费了，所以花了点时间撸了一个Mybatis的SQL解析工具。大大提高我们的开发效率！<span style="color: red">如果对您有帮助，别忘啦领个红包哦~</span><br>
+        使用：只需要把IDEA中mybatis打印的SQL日志，复制粘贴到文本框就可以了，会自动将MyBatis日志中的SQL提取出来并将问号参数替代成实际值。
+    </div>
+    <div>
+        <textarea style="width:100%;"  name="logBefore" id="logBeforeId" rows="10" placeholder="转换前的log
+
+2021-08-13 22:33:32.666 DEBUG 15984 --- [nio-8080-exec-8] c.g.b.mapper.TbUserMapper.selectPage     : ==>  Preparing: SELECT COUNT(1) FROM tb_user
+2021-08-13 22:33:32.666 DEBUG 15984 --- [nio-8080-exec-8] c.g.b.mapper.TbUserMapper.selectPage     : ==> Parameters:
+2021-08-13 22:33:32.667 DEBUG 15984 --- [nio-8080-exec-8] c.g.b.mapper.TbUserMapper.selectPage     : ==>  Preparing: SELECT id,username,password,state,phone,email,createtime,updatetime,last_login_time FROM tb_user LIMIT ?,?
+2021-08-13 22:33:32.667 DEBUG 15984 --- [nio-8080-exec-8] c.g.b.mapper.TbUserMapper.selectPage     : ==> Parameters: 0(Long), 10(Long)
+2021-08-13 22:33:32.668 DEBUG 15984 --- [nio-8080-exec-8] c.g.b.mapper.TbUserMapper.selectPage     : <==      Total: 1
+
+"></textarea>
+    </div>
+    <div class="btn-parent">
+        <div class="btn-child">
+            <button type="button" onclick="multiTransefer(document.getElementById('logBeforeId').value)" class="btn btn-success">转换</button>
+            <button type="button" onclick="clearContent()" class="btn btn-danger">清除</button>
+        </div>
+    </div>
+    <div>
+        <textarea style="width:100%;" name="logAfter" id="logAfterId" rows="20" placeholder="转换后的SQL;
+
+SELECT COUNT(1) FROM tb_user ;
+
+SELECT id,username,password,state,phone,email,createtime,updatetime,last_login_time FROM tb_user LIMIT 0,10 ;
+"></textarea>
+    </div>
+</div>
+<div class="end">
+    <script type="text/javascript">
+        document.write(unescape("%3Cspan id='cnzz_stat_icon_1280211864'%3E%3C/span%3E%3Cscript src='https://s9.cnzz.com/z_stat.php%3Fid%3D1280211864%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+</div>
+<ul id="dowebok" style="display: none">
+    <li><img data-original="img/p1.jpg" src="img/thumbnails/p1.jpg" alt="图片1"></li>
+</ul>
+<ul id="dowebok2" style="display: none">
+    <li><img data-original="img/p2.jpg" src="img/thumbnails/p2.jpg" alt="图片1"></li>
+</ul>
 </body>
+<script type="text/javascript">
+
+    function multiTransefer(inputText) {
+        document.getElementById('logAfterId').value = '';
+        // 将传入的字符串根据MyBatis的标识拆分成数组
+        var mybatisSQLTexts = [];
+
+        while (inputText.lastIndexOf('Preparing: ') > -1) {
+            // 因为是从尾部截取，所以需要从数组的头部添加
+            mybatisSQLTexts.unshift(inputText.substring(inputText.lastIndexOf('Preparing: ')));
+
+            inputText = inputText.substring(0, inputText.lastIndexOf('Preparing: '));
+        }
+        console.log(mybatisSQLTexts);
+
+        // 将数组中的字符串挨个处理，以数组形式返回
+        for (var i = 0; i < mybatisSQLTexts.length; i++) {
+            parseSql(mybatisSQLTexts[i]);
+        }
+    }
+
+    // 单句的问号生成SQL
+    function parseSql(textVa) {
+        // 获取带问号的SQL语句
+        var statementStartIndex = textVa.indexOf('Preparing: ');
+        var statementEndIndex = textVa.length - 1;
+        for (var i = statementStartIndex; i < textVa.length; i++) {
+            if (textVa[i] === "\n") {
+                statementEndIndex = i;
+                break;
+            }
+        }
+        var statementStr = textVa.substring(statementStartIndex + "Preparing: ".length, statementEndIndex);
+        // console.log(statementStr);
+        //获取参数
+        var parametersStartIndex = textVa.indexOf('Parameters: ');
+        var parametersEndIndex = textVa.length - 1;
+        for (var i = parametersStartIndex; i < textVa.length; i++) {
+            if (textVa[i] === "\n") {
+                parametersEndIndex = i;
+                break;
+            } else {
+                // console.log(textVa[i]);
+            }
+        }
+        var parametersStr = textVa.substring(parametersStartIndex + "Parameters: ".length, parametersEndIndex+1);
+        parametersStr = parametersStr.split(",");
+        // console.log(parametersStr);
+        for (var i = 0; i < parametersStr.length; i++) {
+            // 如果数据中带括号将使用其他逻辑
+            tempStr = parametersStr[i].substring(0, parametersStr[i].lastIndexOf("("));
+            // 获取括号中内容
+            typeStr = parametersStr[i].substring(parametersStr[i].lastIndexOf("(") + 1, parametersStr[i].lastIndexOf(")"));
+            // 如果为字符类型
+            if (typeStr === "String" || typeStr === "Timestamp" || typeStr === "Date") {
+                statementStr = statementStr.replace("?", "'" + tempStr.trim() + "'");
+            } else {
+                // 数值类型
+                statementStr = statementStr.replace("?", tempStr.trim());
+            }
+        }
+        // console.log(statementStr);
+        document.getElementById("logAfterId").value += '\n\n\n';
+        document.getElementById("logAfterId").value += statementStr+";";
+        return textVa;
+    }
+
+    function clearContent() {
+        document.getElementById('logBeforeId').value = '';
+        document.getElementById('logAfterId').value = '';
+    }
+</script>
 </html>
